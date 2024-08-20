@@ -1,0 +1,492 @@
+START
+  PROGRAM new_patient()
+    DECLARE (fh,fh1,rec,vrec,arec,name,age,pid,phoneno,id,email,vc,vacc,vaccode,d1,d2,stat)
+    OPEN patient.txt WITH append mode AS fh
+    OPEN vaccination.txt WITH append mode AS fh1
+    SET rec AS List
+    SET vrec AS List
+    SET arec AS List
+    arec = [rec,vrec]
+    DISPLAY ('Name:')
+    READ name
+    DOWHILE TRUE
+      DISPLAY ('Age:')
+      READ age
+      IF 120>age>=0 THEN
+        break
+      ELSE
+        DISPLAY("Please Input a Valid Age")
+      ENDIF
+    ENDDO
+    pid = get_new_id('PID')
+    DISPLAY("Phone No.: ")
+    READ phoneno
+    DISPLAY("IC No.: ")
+    READ ic
+    DISPLAY("Email: ")
+    READ email
+    DOWHILE TRUE
+      DISPLAY ("Vaccination Centre Choice(1/2): ")
+      READ vcc
+      IF vcc == '1' OR '2' THEN
+        vc = 'VC' + vcc
+	BREAK
+      ELSE
+	DISPLAY("INVALID INPUT, PLEASE INSERT 1 OR 2! ")
+      ENDIF
+    ENDDO
+    APPEND name TO rec AND vrec
+    APPEND age TO rec AND vrec
+    APPEND phoneno TO rec
+    APPEND pid TO rec AND vrec
+    APPEND ic TO rec
+    APPEND email TO rec
+    APPEND vc TO rec AND vrec
+    IF (age < 12) THEN
+      DISPLAY ("Sorry, you cannot get vaccinated under the age of 12.")
+      vaccode = 'No Vaccine'
+      APPEND vaccode to rec AND vrec
+    ELSE IF (age >= 45) THEN
+      WHILE TRUE
+	DISPLAY ("AF vaccine(2 Dose)")
+	DISPLAY ("BV vaccine(2 Dose)")
+	DISPLAY ("DM vaccine(2 Dose)")
+	DISPLAY ("EC vaccine(1 Dose)")
+	DISPLAY ("Please choose a vaccine type.")
+	READ vacc
+	IF (vacc = AF) THEN
+	  DISPLAY ("You have chosen AF vaccine.")
+	  READ vaccode 
+	  APPEND vaccode TO rec AND vrec
+	  BREAK
+	ELSE IF (vacc = BV) THEN
+	  DISPLAY ("You have chosen BV vaccine.")
+	  READ vaccode 
+	  APPEND vaccode TO rec AND vrec
+	  BREAK
+	ELSE IF (vacc = DM) THEN
+	  DISPLAY ("You have chosen DM vaccine.")
+	  READ vaccode 
+	  APPEND vaccode TO rec AND vrec
+	  BREAK
+	ELSE IF (vacc = EC) THEN
+	  DISPLAY ("You have chosen EC vaccine.")
+	  READ vaccode 
+	  APPEND vaccode TO rec AND vrec
+	  BREAK
+	ELSE
+	  DISPLAY ("INVALID INPUT")
+        ENDIF
+    ELSE IF age >= 18 THEN
+      WHILE TRUE
+	DISPLAY ("BV vaccine(2 Dose)")
+	DISPLAY ("CZ vaccine(2 Dose)")
+	DISPLAY ("EC vaccine(1 Dose)")
+	DISPLAY ("Please choose a vaccine type.")
+	READ vacc
+	IF (vacc = BV) THEN
+	  DISPLAY ("You have chosen BV vaccine.")
+	  READ vaccode 
+	  APPEND vaccode TO rec AND vrec
+	  BREAK
+	ELSE IF (vacc = CZ) THEN
+	  DISPLAY ("You have chosen CZ vaccine.")
+	  READ vaccode 
+	  APPEND vaccode TO rec AND vrec
+	  BREAK
+	ELSE IF (vacc = EC) THEN
+	  DISPLAY ("You have chosen EC vaccine.")
+	  READ vaccode 
+	  APPEND vaccode TO rec AND vrec
+	  BREAK
+	ELSE
+	  DISPLAY ("INVALID INPUT")
+        ENDIF
+    ELSE IF age >= 12 THEN
+      WHILE TRUE
+	DISPLAY ("AF vaccine(2 Dose)")
+	DISPLAY ("CZ vaccine(2 Dose)")
+	DISPLAY ("DM vaccine(2 Dose)")
+	DISPLAY ("Please choose a vaccine type.")
+	READ vacc
+	IF (vacc = AF) THEN
+	  DISPLAY ("You have chosen AF vaccine.")
+	  READ vaccode 
+	  APPEND vaccode TO rec AND vrec
+	  BREAK
+	ELSE IF (vacc = CZ) THEN
+	  DISPLAY ("You have chosen CZ vaccine.")
+	  READ vaccode 
+	  APPEND vaccode TO rec AND vrec
+	  BREAK
+	ELSE IF (vacc = DM) THEN
+	  DISPLAY ("You have chosen DM vaccine.")
+	  READ vaccode 
+	  APPEND vaccode TO rec AND vrec
+	  BREAK
+	ELSE
+	  DISPLAY ("INVALID INPUT")
+        ENDIF
+    ENDIF
+    DISPLAY("Your patient id is "+pid)
+    now = datetime.now()
+    reg_date = now.strftime("%d/%m/%y")
+    APPEND reg_date TO rec
+    dose1 = now + timedelta(days=5)
+    d1 = dose1.strftime("%d/%m/%y")
+    d2 = '-'
+    stat = 'NEW'
+    DISPLAY ("Your first dose will be on: " + d1)
+    APPEND d1 TO vrec
+    APPEND d2 TO vrec
+    APPEND stat TO vrec
+    DISPLAY("=" * 100)
+    patient.write(":".join(rec) + "\n")
+    vaccination.write(":".join(vrec) + "\n")
+    RETURN arec
+
+  PROGRAM get_new_id(eid)
+    DECLARE (fh,rec,ind,a,nextid,new_id)
+    OPEN id.txt WITH append mode AS fh
+      rec = fh.readline()
+    IF eid = 'PID' THEN
+      ind = 0
+    ENDIF
+    a = rec.aplit(":")
+    nextid = a[ind]
+    new_id = STRING(INTEGER(nextid[3:]) + 1)
+    IF LENGTH of (new_id) == 1 THEN
+      nextid = nextid[:3] + "0000" + new_id
+    ELSE IF LENGTH of (new_id) == 2 THEN
+      nextid = nextid[:3] + "000" + new_id
+    ELSE IF LENGTH of (new_id) == 3 THEN
+      nextid = nextid[:3] + "00" + new_id
+    ELSE IF LENGTH of (new_id) == 4 THEN
+      nextid = nextid[:3] + "0" + new_id
+    ENDIF
+    a[ind] = nextid
+    rec = ":".join(a)
+    OPEN id.txt WITH write mode AS fh
+      fh.write(rec)
+    RETURN nextid
+
+  PROGRAM mod_patient(allrecs,vallrec)
+    DECLARE(no_of_rec,search,flg,idx,indx,mod,fh,fh1)
+    no_of_rec = LENGTH of (allrecs)
+    DISPLAY ("Please enter your Patient ID (PID) to search: ")
+    READ search
+    flg = 0
+    LOOP i IN RANGE OF (no_of_rec)
+      IF search IN allrecs[i][3] THEN
+	flg = 1
+        DISPLAY("1 - " + allrecs[i][0])
+        DISPLAY("1 - " + allrecs[i][2])
+        DISPLAY("1 - " + allrecs[i][5])
+	DISPLAY("Enter the no of feild to modify: ")
+	READ idx
+	IF idx = '1' THEN
+	  indx = 0
+	  DISPLAY ("Enter a new value: ")
+	  READ mod
+	  allrecs[i][indx] = mod
+	  vallrec[i][0] = mod
+	  DISPLAY("Your name has been changed to" , mod)
+	ELSE IF idx = '2' THEN
+	  indx = 2
+	  DISPLAY ("Enter a new value: ")
+	  READ mod
+	  allrecs[i][indx] = mod
+	  DISPLAY("Your phone number has been changed to" , mod)
+	ELSE IF idx = '3' THEN
+	  indx = 5
+	  DISPLAY ("Enter a new value: ")
+	  READ mod
+	  allrecs[i][indx] = mod
+	  DISPLAY("Your Email has been changed to" , mod)
+	ENDIF
+      ENDIF
+    ENDLOOP
+    IF flg == 0 THEN
+      DISPLAY("Patient ID not found")
+    ELSE
+      OPEN patient.txt WITH write mode AS fh
+	LOOP line IN allrecs
+	  fh.write(":".join(line)+"\n")
+        ENDLOOP
+      OPEN vaccination.txt WITH write mode AS fh1
+	LOOP line IN vallrecs
+	fh1.write(":".join(line)+"\n")
+        ENDLOOP
+    ENDLOOP
+      RETURN search
+
+  PROGRAM v_admin(vallrec)
+    DECLARE(search,flg,d1done,now,dose1,dose2,d2done)
+    DISPLAY("Patient ID: ")
+    READ search
+    flg = 0
+    LOOP i IN RANGE OF (LENGTH OF (vallrec))
+      IF search IN vallrec[i][2] THEN
+	flg = 1
+	DISPLAY("Patient ID: ", vallrec[i][2])
+	DISPLAY("vaccination Centre: ", vallrec[i][3])
+	DISPLAY("Selected vaccine: ", vallrec[i][4])
+	DISPLAY("D1 Date: ", vallrec[i][5])
+	DISPLAY("D2 Date: ", vallrec[i][6])
+	DISPLAY("Status: ", vallrec[i][7])
+	IF vallrec[i][7] == 'Done' THEN
+	  DISPLAY("You have done your vaccination!")
+	ELSE IF vallrec[i][7] == 'NEW' THEN
+	  DISPLAY("Update Dose 1 Status To Done? ")
+	  READ d1done
+	  IF d1done == 'yes' THEN
+	    vallrec[i][7] = 'DONE DOSE 1'
+            IF vallrec[i][4] == "AF" THEN
+              now = datetime.now()
+              dose1 = now.strftime("%d/%m/%y")
+              vallrec[i][5] = dose1
+              dose2 = now + timedelta(days=14)
+              vallrec[i][6] = dose2.strftime("%d/%m/%y")
+              DISPLAY("Your second dose will be on: " + vallrec[i][6])
+            ELSE IF vallrec[i][4] == "CZ" THEN
+              now = datetime.now()
+              dose1 = now.strftime("%d/%m/%y")
+              vallrec[i][5] = dose1
+              dose2 = now + timedelta(days=21)
+              vallrec[i][6] = dose2.strftime("%d/%m/%y")
+              DISPLAY("Your second dose will be on: " + vallrec[i][6])
+            ELSE IF vallrec[i][4] == "BV" THEN
+              now = datetime.now()
+              dose1 = now.strftime("%d/%m/%y")
+              vallrec[i][5] = dose1
+              dose2 = now + timedelta(days=21)
+              vallrec[i][6] = dose2.strftime("%d/%m/%y")
+              DISPLAY("Your second dose will be on: " + vallrec[i][6])
+            ELSE IF vallrec[i][4] == "DM" THEN
+              now = datetime.now()
+              dose1 = now.strftime("%d/%m/%y")
+              vallrec[i][5] = dose1
+              dose2 = now + timedelta(days=28)
+              vallrec[i][6] = dose2.strftime("%d/%m/%y")
+              DISPLAY("Your second dose will be on: " + vallrec[i][6])
+            ELSE IF vallrec[i][4] == "EC" THEN
+              DISPLAY("You are completely vaccinated! ")
+	      vallrec[i][11] = 'NOT NEEDED'
+              vallrec[i][12] = 'FULLLY VACCINATED'
+	    ENDIF
+	  ELSE IF d1done == 'no' THEN
+	    DISPLAY("Please complete your vaccination before you update the vaccination status.")
+	  ENDIF
+      ELSE IF vallrec[i][7] == 'DONE DOSE 1' THEN
+        DISPLAY("Update Dose 2 Status To DONE ? ")
+	READ d2done               
+ 	IF d2done == 'yes' THEN
+	  vallrec[i][7] = 'Fully Vaccinated'
+          DISPLAY('Congratulations! You are completely vaccinated!')
+	ELSE IF d2done == 'no' THEN
+	  DISPLAY ("Please complete your vaccination before you update the vaccination status.")
+	ENDIF
+      ENDIF
+    ENDLOOP
+    IF flg == 0 THEN
+      DISPLAY("Patient ID not found")
+    ELSE
+      OPEN vaccination.txt WITH write mode AS fh1
+        LOOP line IN allrecs
+          fh.write(":".join(line))
+	ENDLOOP
+    ENDIF
+
+  PROGRAM search_patient_record_status(vallrec,allrecs)
+    DECLARE(search,flg)
+    DISPLAY ("Patient ID:")
+    READ search
+    flg = 0
+    LOOP i IN RANGE OF (LENGTH OF (vallrec))
+      IF search in vallrec[i][2] THEN
+	flg = 1
+	DISPLAY("NAME - " + vallrec[i][0])
+	DISPLAY("AGE - " + vallrec[i][1])
+	DISPLAY("PATIENT ID - " + vallrec[i][2])
+	DISPLAY("IC NUMBER - " + allrecs[i][4])
+	DISPLAY("VACCINE CENTRE - " + vallrec[i][3])
+	DISPLAY("VACCINE - " + vallrec[i][4])
+	DISPLAY("DOSE 1 DATE - " + vallrec[i][5])
+	DISPLAY("DOSE 2 DATE - " + vallrec[i][6])
+	DISPLAY("STATUS - " + vallrec[i][7])
+        BREAK
+      ENDIF
+    ENDLOOP
+    IF flg == 0 THEN
+      DISPLAY("Patient ID not found")
+
+  PROGRAM patient_vac_stat(vallrec)
+    DECLARE(af,afd,afh,cz,czd,czh,bv,bvd,bvh,dm,dmd,dmh,ec,ecd,ech,afv2d,czv2d,bvv2d,dmv2d,ecv2d,status)
+    af = 0
+    afd = 0
+    afh = 0
+    cz = 0
+    czd = 0
+    czh = 0
+    bv = 0
+    bvd = 0
+    bvh = 0
+    dm = 0
+    dmd = 0
+    dmh = 0
+    ec = 0
+    ecd = 0
+    ech = 0
+    afv2d = 0
+    czv2d = 0
+    bvv2d = 0
+    dmv2d = 0
+    ecv2d
+    status = LENGTH of (vallrec)
+    LOOP i IN RANGE (statis)
+      IF vallrec[i][4] = 'AF' THEN
+	af = af + 1
+	IF vallrec[i][7] = 'DONE DOSE 1' THEN
+	  afd = afd + 1
+	ELSE IF vallrec[i][7] = 'NEW' 
+	  afh = afh + 1  
+	ELSE IF vallrec[i][7] = 'FULLY VACCINATED' 
+	  afv2d = afv2d + 1  
+	ENDIF
+      ENDIF
+      ELSE IF vallrec[i][4] = 'CZ' THEN
+	cz = cz + 1
+	IF vallrec[i][7] = 'DONE DOSE 1' THEN
+	  czd = czd + 1
+	ELSE IF vallrec[i][7] = 'NEW' 
+	  czh = czh + 1  
+	ELSE IF vallrec[i][7] = 'FULLY VACCINATED' 
+	  czv2d = czv2d + 1  
+	ENDIF
+      ENDIF
+      ELSE IF vallrec[i][4] = 'BV' THEN
+	bv = bv + 1
+	IF vallrec[i][7] = 'DONE DOSE 1' THEN
+	  bvd = bvd + 1
+	ELSE IF vallrec[i][7] = 'NEW' 
+	  bvh = bvh + 1  
+	ELSE IF vallrec[i][7] = 'FULLY VACCINATED' 
+	  bvv2d = bvv2d + 1  
+	ENDIF
+      ENDIF
+      ELSE IF vallrec[i][4] = 'DM' THEN
+	dm = dm + 1
+	IF vallrec[i][7] = 'DONE DOSE 1' THEN
+	  dmd = dmd + 1
+	ELSE IF vallrec[i][7] = 'NEW' 
+	  dmh = dmh + 1  
+	ELSE IF vallrec[i][7] = 'FULLY VACCINATED' 
+	  dmv2d = dmv2d + 1  
+	ENDIF
+      ENDIF
+      ELSE IF vallrec[i][4] = 'EC' THEN
+	ec = ec + 1
+	IF vallrec[i][7] = 'DONE DOSE 1' THEN
+	  ecd = ecd + 1
+	ELSE IF vallrec[i][7] = 'NEW' 
+	  ech = ech + 1  
+	ELSE IF vallrec[i][7] = 'FULLY VACCINATED' 
+	  czv2d = czv2d + 1  
+	ENDIF
+      ENDIF
+    ENDLOOP
+    DISPLAY("Number of people who are waiting for dose 1:", afh+czh+bvh+dmh+ech)
+    DISPLAY("AF: ", afh)
+    DISPLAY("CZ: ", czh)
+    DISPLAY("BV: ", bvh)
+    DISPLAY("DM: ", dmh)
+    DISPLAY("EC: ", ech)
+    DISPLAY("Number of people who are waiting for dose 2:", afd+czd+bvd+dmd+ecd)
+    DISPLAY("AF: ", afd)
+    DISPLAY("CZ: ", czd)
+    DISPLAY("BV: ", bvd)
+    DISPLAY("DM: ", dmd)
+    DISPLAY("EC: ", ecd)
+    DISPLAY("Number of people who is completed vaccination:", afv2d+czv2d+bvv2d+dmv2d+ecv2d)
+    DISPLAY("AF: ", afv2d)
+    DISPLAY("CZ: ", czv2d)
+    DISPLAY("BV: ", bvv2d)
+    DISPLAY("DM: ", dmv2d)
+    DISPLAY("EC: ", ecv2d)
+    DISPLAY("Total number of patient:", statis)
+    DISPLAY("AF: ", af)
+    DISPLAY("CZ: ", cz)
+    DISPLAY("BV: ", bv)
+    DISPLAY("DM: ", dm)
+    DISPLAY("EC: ", ec)
+
+
+
+
+
+  PROGRAM show_all_rec(allrecs)
+    DECLARE (no_of_rec)
+    no_of_rec = LENGTH OF (allrecs)
+    DISPLAY ("=" * 150)
+    DISPLAY("NAME".center(10) + "|" + "AGE".center(3) + "|" + "PHONE NUMBER".center(12) + "|" +
+          "PATIENT ID".center(10) + "|" + "IC NUMBER".center(12) + "|" + "EMAIL".center(20) +
+          "|" + "VACCINE CENTRE".center(14) + "|" + "VACCINE CODE".center(12) + "|" + "DOSE 1 DATE".center(12) + "|" +
+          "DOSE 2 DATE".center(12) + "|" + "STATUS".center(20))
+    DISPLAY ("=" * 150)
+    LOOP i IN RANGE OF (no_of_rec)
+      DISPLAY(allrecs[i][0].center(10) + "|" + allrecs[i][1].center(3) + "|" + allrecs[i][2].center(12) + "|" +
+              allrecs[i][3].center(10) + "|" + allrecs[i][4].center(12) + "|" + allrecs[i][5].center(20) + "|" +
+              allrecs[i][6].center(14) + "|" + vallrec[i][4].center(12) + "|" + vallrec[i][5].center(12) + "|" +
+              vallrec[i][6].center(12) + "|" + vallrec[i][7].center(20))
+    ENDLOOP
+    DISPLAY ("=" * 150)
+
+  PROGRAM main_menu()
+    DECLARE(allrecs,vallrec,choice,fh,fh1)
+    SET allrecs AS List
+    OPEN patient.txt WITH reading mode AS fh
+    LOOP line IN fh
+      my_list = line.strip().split(":")
+      APPEND my_list TO allrecs
+    ENDLOOP
+    SET vallrec AS List
+    OPEN vaccination.txt WITH reading mode AS fh1
+    LOOP line IN fh1
+      my_list = line.strip().split(":")
+      APPEND my_list TO vallrec
+    ENDLOOP
+    DOWHILE TRUE
+      DISPLAY("Hi!")
+      DISPLAY("1-New Patient Registration. ")
+      DISPLAY("2-Modify Patient Personal Information. ")
+      DISPLAY("3-Vaccine Administration. ")
+      DISPLAY("4-Search Patient Record and Vaccination Status. ")
+      DISPLAY("5-Statistical Information on Patients Vaccinated. ")
+      DISPLAY("6-All Patient Information. ")
+      DISPLAY("7-Exit. ")
+      DISPLAY("Enter your choice.")
+      READ choice
+      IF choice == '1':
+        CALL PROGRAM main_rec = new_patient()
+        allrecs.append(main_rec)
+      ELSE IF choice == '2':
+        CALL PROGRAM mod_patient(allrecs,vallrec)
+      ELSE IF choice == '3':
+        CALL PROGRAM v_admin(vallrec)
+      ELSE IF choice == '4':
+        CALL PROGRAM search_patient_record_status(vallrec,allrecs)
+      ELSE IF choice == '5':
+        CALL PROGRAM patient_vac_stat(vallrec)
+      ELSE IF choice == '6':
+        CALL PROGRAM show_all_rec(allrecs,vallrec)
+      ELSE IF choice == '7':
+        DISPLAY("GoodBye~ Have a nice day! ")
+        BREAK
+      ELSE
+        DISPLAY("INVALID INPUT. ")
+      ENDIF
+    ENDDO
+
+  main_menu()
+
+END
